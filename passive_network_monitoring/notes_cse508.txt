@@ -1,0 +1,36 @@
+Description:
+Using getopt function, the program gets the user input and there after runs accordingly.
+Used the structures available in the libraries of various packets and extracted the information like HOST addresses of source and destination, IP addresses of both destination and source and their corresponding ports.
+Later, printed the payload.
+
+
+Running the program:
+run makefile.mk:
+command: make -f makefile.mk
+
+interface -i test case:
+input command: ./mydump -i wlp2s0 
+output file: interface_output
+Description: If an interface is given explicitly, this device is used. If "any" is given as interface, it will take the default device as the device and move on with the packet sniffing process.
+
+
+string -s test case:
+input file: hw1.pcap
+input command: ./mydump -s gc 
+output file: string_output
+Description: If a string is given, this string is passed along with each packet in the pcap_loop function's extra user parameter and there after, used to check if it exists in the payload using StrStr function and,
+if it exists the details of the packet and corresponding payload are printed and if not, no details/payload of the packet are printed i.e.,filtered based on the string provided.
+
+
+reading from pcap file -r test case:
+input file: hw1.pcap
+input command: ./mydump -r hw1.pcap 
+output file: read_file_output
+Description:  Used function pcap_open_offline to open the file and there after used the same pcap_loop function to modify and extract the contents of the packet as needed.
+
+
+expression test case:
+input command: ./mydump tcp
+output file: tcp_expression_output
+Description: Used pcap_compile() and pcap_setfilter() functions from pcap library to filter the dump.
+
