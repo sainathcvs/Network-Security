@@ -1,0 +1,43 @@
+Test environment:
+a) command: lsb release -a
+	No LSB modules are available.
+	Distributor ID:	Ubuntu
+	Description:	Ubuntu 16.04.3 LTS
+	Release:	16.04
+	Codename:	xenial
+b) command: uname -srm
+	Linux 4.10.0-38-generic x86_64
+
+
+
+
+Compiler details:
+GCC version: gcc (Ubuntu 5.4.0-6ubuntu1~16.04.4) 5.4.0 20160609
+
+
+
+
+Command line with the options to run your programs (both server and client):
+a) To compile code:
+	make
+b) Run Server: 
+	./proxy -k mykey -l 3111 localhost 22
+c) Run Client:
+	ssh -o "Proxycommand ./proxy -k mykey localhost 3111" localhost
+
+
+
+
+Description about the design and implementation of pbproxy:
+Firstly, started with the implemention of a simple chat application with a client and a server which can communicate with each other, using fcntl to make the sockets non blocking. 
+After that, made changes to the server code such that it will be able to communicate with multiple clients using fork iteratively. 
+Later, made the ssh related changes. 
+Once successfully logged into the ssh using the code, added the AES encryption using the openSSL APIs. Later modified the code such that the client will first send an IV to the proxy and then the key is transferred from proxy to the ssh server. And then the communication starts and the communication will go on encrypted using AES.
+
+
+
+
+References:
+https://stackoverflow.com/questions/30093262/c-usage-of-f-getfl-and-f-setfl
+http://www.cs.dartmouth.edu/~campbell/cs50/socketprogramming.html
+http://www.gurutechnologies.net/blog/aes-ctr-encryption-in-c/
