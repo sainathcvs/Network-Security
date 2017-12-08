@@ -3,7 +3,6 @@
 from scapy.all import *
 import dpkt
 from sys import argv
-import pcap
 
 def have_common_ips(existing_ips,current_ips):
     #print "-------------have_common_ips-------------------"
@@ -65,9 +64,11 @@ if __name__=='__main__':
     global txnIDs
     txnIDs={}
     interface = 'wlp3s0'
-    is_interface_given = False
-    global is_tracefile_given
+    tracefile=''
+    user_filter = 'udp port 53'
     is_tracefile_given = False
+    if len(argv)%2==0:
+        user_filter = user_filter + " and " + argv[-1]
     while argv:
         if argv[0][0] == '-':
             args[argv[0]]=argv[1]
@@ -84,4 +85,4 @@ if __name__=='__main__':
             if pkt.haslayer(DNS):
                 dns_detect(pkt)
     else:
-        pkts = sniff(iface=interface, filter="udp port 53",prn=dns_detect)
+        pkts = sniff(iface=interface, filter=user_filter,prn=dns_detect)
