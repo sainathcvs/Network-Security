@@ -3,6 +3,7 @@
 from scapy.all import *
 import dpkt
 from sys import argv
+import datetime
 
 def have_common_ips(existing_ips,current_ips):
     #print "-------------have_common_ips-------------------"
@@ -18,9 +19,10 @@ def have_common_ips(existing_ips,current_ips):
     return False
 
 
-def print_dns_attack(txID,req,ans1,ans2,timestamp):
+def print_dns_attack(txID,req,ans1,ans2):
     #print "-------------print_dns_attack-------------------"
-    print timestamp,'DNS poisoning attempt'
+    print datetime.datetime.utcnow(),
+    print ' DNS poisoning attempt'
     print 'TXID ',txID,' Request ',req
     print 'Answer1 ',ans1
     print 'Answer2 ', ans2
@@ -29,35 +31,34 @@ def print_dns_attack(txID,req,ans1,ans2,timestamp):
 
 def dns_detect(pkt):
     #print "-------------dns_detect-------------------"
-    dns = pkt[DNS]
-    txID = dns.id
-    ans_ips=[]
-    #our ip address by default
-    if dns.qd[0].qtype == dpkt.dns.DNS_A and dns.qd[0].qclass == dpkt.dns.DNS_IN:
-        if(dns.qr ==  dpkt.dns.DNS_Q and dns.qdcount == 1 and dns.nscount == 0 and dns.ancount == 0):
-            #query packet
-            if txID not in txnIDs:
-                txnIDs[txID] = {'req':dns.qd[0].qname[:-1],'ips':[],'timestamp':" "}
-        else:
-            #answer packet
-            if txID not in txnIDs.keys():
-                print "if ancount----",txID,dns.ancount,dns.qd[0].qname[:-1]
-                for i in xrange(0,dns.ancount):
-                    ans_ips.append(dns.an[i].rdata)
-                txnIDs[txID] = {'req':dns.qd[0].qname[:-1],'ips':ans_ips,'timestamp':" "}
+    if pkt.haslayer(DNS):
+        dns = pkt[DNS]
+        txID = dns.id
+        ans_ips=[]
+        #our ip address by default
+        if dns.qd[0].qtype == dpkt.dns.DNS_A and dns.qd[0].qclass == dpkt.dns.DNS_IN:
+            if dns.qr ==  dpkt.dns.DNS_Q and dns.qdcount == 1 and dns.nscount == 0 and dns.ancount == 0:
+                #query packet
+                if txID not in txnIDs:
+                    txnIDs[txID] = {'req':dns.qd[0].qname[:-1],'ips':[]}
             else:
-                existing_ips = txnIDs[txID]['ips']
-                timestamp = pkt.time
-                #print "else ancount----",txID,dns.ancount,dns.qd[0].qname[:-1],len(existing_ips)
-                for i in xrange(0,dns.ancount):
-                    ans_ips.append(dns.an[i].rdata)
-                if len(existing_ips)==0:
-                    txnIDs[txID]['ips'] = ans_ips
+                #answer packet
+                if txID not in txnIDs.keys():
+                    print "if ancount----",txID,dns.ancount,dns.qd[0].qname[:-1]
+                    for i in xrange(0,dns.ancount):
+                        ans_ips.append(dns.an[i].rdata)
+                    txnIDs[txID] = {'req':dns.qd[0].qname[:-1],'ips':ans_ips}
                 else:
-                    if len(existing_ips)>0:
-                        is_similar = have_common_ips(existing_ips,ans_ips)
-                        if not is_similar:
-                            print_dns_attack(txID,dns.qd[0].qname[:-1],existing_ips,ans_ips,timestamp)
+                    existing_ips = txnIDs[txID]['ips']
+                    for i in xrange(0,dns.ancount):
+                        ans_ips.append(dns.an[i].rdata)
+                    if len(existing_ips)==0:
+                        txnIDs[txID]['ips'] = ans_ips
+                    else:
+                        if len(existing_ips)>0:
+                            is_similar = have_common_ips(existing_ips,ans_ips)
+                            if not is_similar:
+                                print_dns_attack(txID,dns.qd[0].qname[:-1],existing_ips,ans_ips)
 
 if __name__=='__main__':
     args={}
@@ -67,6 +68,7 @@ if __name__=='__main__':
     tracefile=''
     user_filter = 'udp port 53'
     is_tracefile_given = False
+
     if len(argv)%2==0:
         user_filter = user_filter + " and " + argv[-1]
     while argv:
@@ -79,10 +81,8 @@ if __name__=='__main__':
     if '-r' in args:
         is_tracefile_given= True
         tracefile = args['-r']
+
     if is_tracefile_given:
-        packets = rdpcap(tracefile)
-        for pkt in packets:
-            if pkt.haslayer(DNS):
-                dns_detect(pkt)
+        pkts = sniff(offline=tracefile, filter=user_filter,prn=dns_detect)
     else:
         pkts = sniff(iface=interface, filter=user_filter,prn=dns_detect)
