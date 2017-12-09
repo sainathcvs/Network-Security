@@ -61,7 +61,7 @@ if __name__=='__main__':
     txnIDs={}
     interface = 'wlp3s0'
     tracefile=''
-    user_filter = 'udp port 53'
+    user_filter = 'udp src port 53'
     is_tracefile_given = False
 
     if len(argv)%2==0:
