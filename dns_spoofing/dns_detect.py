@@ -4,6 +4,7 @@ from scapy.all import *
 import dpkt
 from sys import argv
 import datetime
+from pytz import timezone
 
 def have_common_ips(existing_ips,current_ips):
     len_min = min(len(existing_ips),len(current_ips))
@@ -19,7 +20,9 @@ def have_common_ips(existing_ips,current_ips):
 
 
 def print_dns_attack(txID,req,ans1,ans2):
-    print datetime.datetime.utcnow(),
+    tzone = timezone('EST')
+    ts = str(datetime.datetime.now(tzone))
+    print ts[:-6],
     print ' DNS poisoning attempt'
     print 'TXID ',txID,' Request ',req
     print 'Answer1 ',ans1
@@ -58,7 +61,7 @@ if __name__=='__main__':
     txnIDs={}
     interface = 'wlp3s0'
     tracefile=''
-    user_filter = 'udp src port 53'
+    user_filter = 'udp port 53'
     is_tracefile_given = False
 
     if len(argv)%2==0:
