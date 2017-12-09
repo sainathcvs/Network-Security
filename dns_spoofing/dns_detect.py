@@ -6,7 +6,6 @@ from sys import argv
 import datetime
 
 def have_common_ips(existing_ips,current_ips):
-    #print "-------------have_common_ips-------------------"
     len_min = min(len(existing_ips),len(current_ips))
     if len_min == len(existing_ips):
         for i in xrange(0,len_min):
@@ -20,7 +19,6 @@ def have_common_ips(existing_ips,current_ips):
 
 
 def print_dns_attack(txID,req,ans1,ans2):
-    #print "-------------print_dns_attack-------------------"
     print datetime.datetime.utcnow(),
     print ' DNS poisoning attempt'
     print 'TXID ',txID,' Request ',req
@@ -30,24 +28,18 @@ def print_dns_attack(txID,req,ans1,ans2):
 
 
 def dns_detect(pkt):
-    #print "-------------dns_detect-------------------"
     if pkt.haslayer(DNS):
         dns = pkt[DNS]
         txID = dns.id
         ans_ips=[]
         #our ip address by default
         if dns.qd[0].qtype == dpkt.dns.DNS_A and dns.qd[0].qclass == dpkt.dns.DNS_IN:
-            if dns.qr ==  dpkt.dns.DNS_Q and dns.qdcount == 1 and dns.nscount == 0 and dns.ancount == 0:
-                #query packet
-                if txID not in txnIDs:
-                    txnIDs[txID] = {'req':dns.qd[0].qname[:-1],'ips':[]}
-            else:
+            if not (dns.qr ==  dpkt.dns.DNS_Q and dns.qdcount == 1 and dns.nscount == 0 and dns.ancount == 0):
                 #answer packet
                 if txID not in txnIDs.keys():
-                    print "if ancount----",txID,dns.ancount,dns.qd[0].qname[:-1]
                     for i in xrange(0,dns.ancount):
                         ans_ips.append(dns.an[i].rdata)
-                    txnIDs[txID] = {'req':dns.qd[0].qname[:-1],'ips':ans_ips}
+                    txnIDs[txID] = {'ips':ans_ips}
                 else:
                     existing_ips = txnIDs[txID]['ips']
                     for i in xrange(0,dns.ancount):
@@ -66,7 +58,7 @@ if __name__=='__main__':
     txnIDs={}
     interface = 'wlp3s0'
     tracefile=''
-    user_filter = 'udp port 53'
+    user_filter = 'udp src port 53'
     is_tracefile_given = False
 
     if len(argv)%2==0:
@@ -81,8 +73,10 @@ if __name__=='__main__':
     if '-r' in args:
         is_tracefile_given= True
         tracefile = args['-r']
-
-    if is_tracefile_given:
-        pkts = sniff(offline=tracefile, filter=user_filter,prn=dns_detect)
-    else:
-        pkts = sniff(iface=interface, filter=user_filter,prn=dns_detect)
+    try:
+        if is_tracefile_given:
+            pkts = sniff(offline=tracefile, filter=user_filter,prn=dns_detect)
+        else:
+            pkts = sniff(iface=interface, filter=user_filter,prn=dns_detect)
+    except:
+        print "ERROR::Invalid command"
